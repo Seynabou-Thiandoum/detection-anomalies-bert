@@ -3,7 +3,6 @@ import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import seaborn as sns
 import re
 from transformers import BertTokenizer, BertForMaskedLM
@@ -14,172 +13,172 @@ st.set_page_config(
     layout="wide"
 )
 
-# ============ CSS CUSTOM ============
-st.markdown("""
+# ============ TOGGLE THEME ============
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = True
+
+col_toggle, _ = st.columns([1, 9])
+with col_toggle:
+    if st.button("🌙 Dark" if not st.session_state.dark_mode else "☀️ Light"):
+        st.session_state.dark_mode = not st.session_state.dark_mode
+        st.rerun()
+
+dark = st.session_state.dark_mode
+
+# ============ COULEURS SELON THÈME ============
+if dark:
+    bg       = "#0a0e1a"
+    card_bg  = "#111827"
+    border   = "#1f2937"
+    text     = "#e2e8f0"
+    subtext  = "#6b7280"
+    accent   = "#38bdf8"
+    hero_bg  = "linear-gradient(135deg, #0f1729 0%, #1a2744 100%)"
+    hero_brd = "#1e3a5f"
+    plot_bg  = "#111827"
+    tick_col = "#6b7280"
+    spine_col= "#1f2937"
+    legend_fc= "#1f2937"
+    legend_ec= "#374151"
+else:
+    bg       = "#f8fafc"
+    card_bg  = "#ffffff"
+    border   = "#e2e8f0"
+    text     = "#0f172a"
+    subtext  = "#64748b"
+    accent   = "#0284c7"
+    hero_bg  = "linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)"
+    hero_brd = "#e2e8f0"
+    plot_bg  = "#ffffff"
+    tick_col = "#94a3b8"
+    spine_col= "#e2e8f0"
+    legend_fc= "#ffffff"
+    legend_ec= "#e2e8f0"
+
+# ============ CSS ============
+st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap');
 
-html, body, [class*="css"] {
+html, body, [class*="css"] {{
     font-family: 'Inter', sans-serif;
-    background-color: #0a0e1a;
-    color: #e2e8f0;
-}
+    background-color: {bg};
+    color: {text};
+}}
+.main {{ background-color: {bg}; }}
+.block-container {{ padding: 2rem 3rem; }}
 
-.main { background-color: #0a0e1a; }
-.block-container { padding: 2rem 3rem; }
-
-.hero {
-    background: linear-gradient(135deg, #0f1729 0%, #1a2744 50%, #0f1729 100%);
-    border: 1px solid #1e3a5f;
+.hero {{
+    background: {hero_bg};
+    border: 1px solid {hero_brd};
     border-radius: 16px;
     padding: 2.5rem;
     margin-bottom: 2rem;
-    position: relative;
-    overflow: hidden;
-}
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}}
 
-.hero::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at 30% 50%, rgba(56, 189, 248, 0.05) 0%, transparent 60%);
-    pointer-events: none;
-}
-
-.hero-title {
+.hero-title {{
     font-family: 'Space Mono', monospace;
     font-size: 2.2rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: {text};
     margin: 0 0 0.5rem 0;
     letter-spacing: -1px;
-}
+}}
+.hero-title span {{ color: {accent}; }}
+.hero-subtitle {{ font-size: 0.95rem; color: {subtext}; margin: 0; font-weight: 300; }}
 
-.hero-title span { color: #38bdf8; }
-
-.hero-subtitle {
-    font-size: 0.95rem;
-    color: #94a3b8;
-    margin: 0;
-    font-weight: 300;
-}
-
-.badge {
+.badge {{
     display: inline-block;
-    background: rgba(56, 189, 248, 0.1);
-    border: 1px solid rgba(56, 189, 248, 0.3);
-    color: #38bdf8;
+    background: rgba(56,189,248,0.08);
+    border: 1px solid rgba(56,189,248,0.2);
+    color: {accent};
     padding: 0.25rem 0.75rem;
     border-radius: 999px;
     font-size: 0.75rem;
     font-family: 'Space Mono', monospace;
     margin-right: 0.5rem;
     margin-top: 1rem;
-}
+}}
 
-.metric-card {
-    background: #111827;
-    border: 1px solid #1f2937;
+.metric-card {{
+    background: {card_bg};
+    border: 1px solid {border};
     border-radius: 12px;
     padding: 1.25rem;
     text-align: center;
-    transition: border-color 0.2s;
-}
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}}
 
-.metric-card:hover { border-color: #374151; }
-
-.metric-value {
+.metric-value {{
     font-family: 'Space Mono', monospace;
     font-size: 2.5rem;
     font-weight: 700;
     margin: 0.25rem 0;
-}
+}}
 
-.metric-label {
+.metric-label {{
     font-size: 0.8rem;
-    color: #6b7280;
+    color: {subtext};
     text-transform: uppercase;
     letter-spacing: 1px;
-}
+}}
 
-.normal-val { color: #22c55e; }
-.moyen-val  { color: #eab308; }
-.eleve-val  { color: #f97316; }
-.critique-val { color: #ef4444; }
+.normal-val   {{ color: {'#22c55e' if dark else '#16a34a'}; }}
+.moyen-val    {{ color: {'#eab308' if dark else '#ca8a04'}; }}
+.eleve-val    {{ color: {'#f97316' if dark else '#ea580c'}; }}
+.critique-val {{ color: {'#ef4444' if dark else '#dc2626'}; }}
 
-.section-title {
+.section-title {{
     font-family: 'Space Mono', monospace;
-    font-size: 1rem;
-    color: #38bdf8;
+    font-size: 0.85rem;
+    color: {accent};
     text-transform: uppercase;
     letter-spacing: 2px;
-    border-bottom: 1px solid #1f2937;
+    border-bottom: 1px solid {border};
     padding-bottom: 0.5rem;
     margin-bottom: 1rem;
-}
+}}
 
-.log-row {
-    background: #111827;
+.log-row {{
+    background: {card_bg};
     border-left: 3px solid #22c55e;
     padding: 0.6rem 1rem;
     margin: 0.3rem 0;
     border-radius: 0 8px 8px 0;
     font-family: 'Space Mono', monospace;
     font-size: 0.72rem;
-    color: #94a3b8;
-}
+    color: {subtext};
+}}
+.log-row.critique {{ border-left-color: #ef4444; color: {'#fca5a5' if dark else '#dc2626'}; }}
+.log-row.eleve    {{ border-left-color: #f97316; color: {'#fdba74' if dark else '#ea580c'}; }}
+.log-row.moyen    {{ border-left-color: #eab308; color: {'#fde047' if dark else '#ca8a04'}; }}
 
-.log-row.critique { border-left-color: #ef4444; color: #fca5a5; }
-.log-row.eleve    { border-left-color: #f97316; color: #fdba74; }
-.log-row.moyen    { border-left-color: #eab308; color: #fde047; }
-
-.score-pill {
+.score-pill {{
     display: inline-block;
     padding: 0.1rem 0.5rem;
     border-radius: 999px;
     font-size: 0.7rem;
     font-family: 'Space Mono', monospace;
     margin-left: 0.5rem;
-}
+}}
+.score-critique {{ background: rgba(239,68,68,0.2); color: #ef4444; }}
+.score-eleve    {{ background: rgba(249,115,22,0.2); color: #f97316; }}
+.score-moyen    {{ background: rgba(234,179,8,0.2);  color: #eab308; }}
 
-.score-critique { background: rgba(239,68,68,0.2); color: #ef4444; }
-.score-eleve    { background: rgba(249,115,22,0.2); color: #f97316; }
-.score-moyen    { background: rgba(234,179,8,0.2); color: #eab308; }
-
-div[data-testid="stFileUploader"] {
-    background: #111827 !important;
-    border: 2px dashed #1f2937 !important;
-    border-radius: 12px !important;
-    padding: 1rem !important;
-}
-
-div[data-testid="stFileUploader"]:hover {
-    border-color: #38bdf8 !important;
-}
-
-.stButton > button {
+.stButton > button {{
     background: linear-gradient(135deg, #0369a1, #0284c7) !important;
     color: white !important;
     border: none !important;
     border-radius: 8px !important;
-    padding: 0.6rem 2rem !important;
     font-family: 'Space Mono', monospace !important;
     font-size: 0.85rem !important;
     letter-spacing: 1px !important;
-    transition: all 0.2s !important;
-}
-
-.stButton > button:hover {
-    background: linear-gradient(135deg, #0284c7, #0ea5e9) !important;
+}}
+.stButton > button:hover {{
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 20px rgba(56,189,248,0.3) !important;
-}
-
-.stSlider > div { color: #94a3b8 !important; }
-.stProgress > div > div { background: #38bdf8 !important; }
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -209,10 +208,10 @@ def compute_score(text, model, tokenizer):
     return outputs.loss.item()
 
 # ============ HERO ============
-st.markdown("""
+st.markdown(f"""
 <div class="hero">
     <p class="hero-title">🛡️ Log <span>Anomaly</span> Detector</p>
-    <p class="hero-subtitle">Détection intelligente d'anomalies par fine-tuning BERT • Masked Language Modeling</p>
+    <p class="hero-subtitle">Détection intelligente d'anomalies • BERT fine-tuné par Masked Language Modeling</p>
     <span class="badge">BERT-base-uncased</span>
     <span class="badge">ESP/UCAD</span>
     <span class="badge">Seynabou Thiandoum & Fatou Gueye Ndong</span>
@@ -221,7 +220,7 @@ st.markdown("""
 
 # ============ UPLOAD ============
 st.markdown('<p class="section-title">📂 Source de données</p>', unsafe_allow_html=True)
-uploaded_file = st.file_uploader("", type=["log", "txt"], label_visibility="collapsed")
+uploaded_file = st.file_uploader("", type=["log","txt"], label_visibility="collapsed")
 
 if uploaded_file:
     lines = uploaded_file.read().decode("utf-8", errors="ignore").splitlines()
@@ -229,7 +228,7 @@ if uploaded_file:
 
     col1, col2 = st.columns([3, 1])
     with col1:
-        max_lines = st.slider("Nombre de lignes à analyser", 50, min(500, len(lines)), 200)
+        max_lines = st.slider("Lignes à analyser", 50, min(500, len(lines)), 200)
     with col2:
         st.metric("Lignes détectées", f"{len(lines):,}")
 
@@ -264,104 +263,73 @@ if uploaded_file:
 
         df = pd.DataFrame({"log": lines, "score": scores})
         df["categorie"] = df["score"].apply(categorize)
-
-        # ── MÉTRIQUES ──
-        st.markdown('<br><p class="section-title">📊 Tableau de bord</p>', unsafe_allow_html=True)
-        c1, c2, c3, c4 = st.columns(4)
         counts = df["categorie"].value_counts()
 
-        with c1:
-            st.markdown(f"""<div class="metric-card">
-                <div class="metric-label">Normal</div>
-                <div class="metric-value normal-val">{counts.get('Normal',0)}</div>
-                <div class="metric-label">logs sains</div>
-            </div>""", unsafe_allow_html=True)
-        with c2:
-            st.markdown(f"""<div class="metric-card">
-                <div class="metric-label">Moyen</div>
-                <div class="metric-value moyen-val">{counts.get('Moyen',0)}</div>
-                <div class="metric-label">à surveiller</div>
-            </div>""", unsafe_allow_html=True)
-        with c3:
-            st.markdown(f"""<div class="metric-card">
-                <div class="metric-label">Élevé</div>
-                <div class="metric-value eleve-val">{counts.get('Élevé',0)}</div>
-                <div class="metric-label">suspects</div>
-            </div>""", unsafe_allow_html=True)
-        with c4:
-            st.markdown(f"""<div class="metric-card">
-                <div class="metric-label">Critique</div>
-                <div class="metric-value critique-val">{counts.get('Critique',0)}</div>
-                <div class="metric-label">anomalies</div>
-            </div>""", unsafe_allow_html=True)
+        # MÉTRIQUES
+        st.markdown('<br><p class="section-title">📊 Tableau de bord</p>', unsafe_allow_html=True)
+        c1, c2, c3, c4 = st.columns(4)
+        for col, cat, cls, sub in zip(
+            [c1,c2,c3,c4],
+            ["Normal","Moyen","Élevé","Critique"],
+            ["normal","moyen","eleve","critique"],
+            ["logs sains","à surveiller","suspects","anomalies"]
+        ):
+            with col:
+                st.markdown(f"""<div class="metric-card">
+                    <div class="metric-label">{cat}</div>
+                    <div class="metric-value {cls}-val">{counts.get(cat,0)}</div>
+                    <div class="metric-label">{sub}</div>
+                </div>""", unsafe_allow_html=True)
 
+        # GRAPHIQUES
         st.markdown("<br>", unsafe_allow_html=True)
-
-        # ── GRAPHIQUES ──
-        plt.style.use('dark_background')
-        fig, axes = plt.subplots(1, 2, figsize=(13, 4),
-                                  facecolor='#111827')
+        fig, axes = plt.subplots(1, 2, figsize=(13, 4), facecolor=plot_bg)
         for ax in axes:
-            ax.set_facecolor('#111827')
-            ax.tick_params(colors='#6b7280')
+            ax.set_facecolor(plot_bg)
+            ax.tick_params(colors=tick_col)
             for spine in ax.spines.values():
-                spine.set_edgecolor('#1f2937')
+                spine.set_edgecolor(spine_col)
 
-        sns.kdeplot(scores, ax=axes[0], fill=True,
-                    color="#38bdf8", alpha=0.3, linewidth=2)
-        axes[0].axvline(p90, color="#eab308", linestyle="--",
-                        linewidth=1.5, label="Seuil 90%")
-        axes[0].axvline(p95, color="#f97316", linestyle="--",
-                        linewidth=1.5, label="Seuil 95%")
-        axes[0].axvline(p99, color="#ef4444", linestyle="--",
-                        linewidth=1.5, label="Seuil 99%")
-        axes[0].set_title("Distribution des scores d'anomalie",
-                           color="#e2e8f0", fontsize=11, pad=12)
-        axes[0].set_xlabel("Score", color="#6b7280", fontsize=9)
-        axes[0].set_ylabel("Densité", color="#6b7280", fontsize=9)
-        axes[0].legend(facecolor='#1f2937', edgecolor='#374151',
-                       labelcolor='#e2e8f0', fontsize=8)
+        kde_color = "#38bdf8" if dark else "#0284c7"
+        sns.kdeplot(scores, ax=axes[0], fill=True, color=kde_color, alpha=0.3, linewidth=2)
+        axes[0].axvline(p90, color="#eab308", linestyle="--", linewidth=1.5, label="Seuil 90%")
+        axes[0].axvline(p95, color="#f97316", linestyle="--", linewidth=1.5, label="Seuil 95%")
+        axes[0].axvline(p99, color="#ef4444", linestyle="--", linewidth=1.5, label="Seuil 99%")
+        axes[0].set_title("Distribution des scores", color=text, fontsize=11, pad=12)
+        axes[0].set_xlabel("Score", color=subtext, fontsize=9)
+        axes[0].set_ylabel("Densité", color=subtext, fontsize=9)
+        axes[0].legend(facecolor=legend_fc, edgecolor=legend_ec,
+                       labelcolor=text, fontsize=8)
 
-        cats = ["Normal", "Moyen", "Élevé", "Critique"]
-        colors = ["#22c55e", "#eab308", "#f97316", "#ef4444"]
-        vals = [counts.get(c, 0) for c in cats]
-        bars = axes[1].bar(cats, vals, color=colors,
-                           width=0.5, edgecolor='none')
-        for bar, val in zip(bars, vals):
-            axes[1].text(bar.get_x() + bar.get_width()/2,
-                         bar.get_height() + 0.5, str(val),
-                         ha='center', va='bottom',
-                         color='#e2e8f0', fontsize=9,
-                         fontfamily='monospace')
-        axes[1].set_title("Répartition par sévérité",
-                           color="#e2e8f0", fontsize=11, pad=12)
-        axes[1].set_ylabel("Nombre de logs", color="#6b7280", fontsize=9)
+        cats_order = ["Normal","Moyen","Élevé","Critique"]
+        bar_colors = ["#22c55e","#eab308","#f97316","#ef4444"]
+        vals = [counts.get(c, 0) for c in cats_order]
+        bars = axes[1].bar(cats_order, vals, color=bar_colors, width=0.5)
+        for b, v in zip(bars, vals):
+            axes[1].text(b.get_x()+b.get_width()/2, b.get_height()+0.3,
+                         str(v), ha='center', color=text, fontsize=9)
+        axes[1].set_title("Répartition par sévérité", color=text, fontsize=11, pad=12)
+        axes[1].set_ylabel("Nombre de logs", color=subtext, fontsize=9)
 
         plt.tight_layout(pad=2)
         st.pyplot(fig)
         plt.close()
 
-        # ── TOP ANOMALIES ──
-        st.markdown('<br><p class="section-title">🚨 Top anomalies critiques</p>',
-                    unsafe_allow_html=True)
-        top = df.nlargest(10, "score")
-
-        for _, row in top.iterrows():
+        # TOP ANOMALIES
+        st.markdown('<br><p class="section-title">🚨 Top anomalies</p>', unsafe_allow_html=True)
+        for _, row in df.nlargest(10, "score").iterrows():
             cat = row['categorie'].lower().replace('é','e')
-            score_class = f"score-{cat}" if cat in ['critique','eleve','moyen'] else ''
             cat_class = cat if cat in ['critique','eleve','moyen'] else ''
-            log_preview = row['log'][:100] + "..." if len(row['log']) > 100 else row['log']
-            st.markdown(f"""
-            <div class="log-row {cat_class}">
-                {log_preview}
+            score_class = f"score-{cat_class}" if cat_class else ''
+            preview = row['log'][:100] + "..." if len(row['log']) > 100 else row['log']
+            st.markdown(f"""<div class="log-row {cat_class}">
+                {preview}
                 <span class="score-pill {score_class}">{row['score']:.3f}</span>
             </div>""", unsafe_allow_html=True)
 
-        # ── EXPORT ──
         st.markdown("<br>", unsafe_allow_html=True)
         st.download_button(
-            "⬇️ Télécharger les résultats (CSV)",
+            "⬇️ Télécharger CSV",
             df.to_csv(index=False),
-            "anomaly_results.csv",
-            "text/csv"
+            "anomaly_results.csv", "text/csv"
         )
